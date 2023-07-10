@@ -18,3 +18,8 @@ Use the up, down, left, and right arrow keys to control the direction of the non
 * Eating a red heart scores one hundred points and increases the length of the snake by two body segments.
 * Eating a light blue diamond scores two hundred points and increases the length of the snake by two body segments.
 * Eating a green pear scores five hundred points and increases the length of the snake by two body segments.
+
+## High Scores
+* The default high score is fifteen hundred points.
+* High scores will be saved to a file named `snac-snak.hi` in the same folder as the `snac-snake.bas` file.
+* Snac-Snake must be run from the exact folder where the `snac-snak.hi` file resides in order for the saved high scores to be read-in by the game.
