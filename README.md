@@ -1,7 +1,7 @@
 # agon-snac-snake
 Snac-Snake: a variant of the classic game [*Snake*](https://en.wikipedia.org/wiki/Snake_(video_game_genre)) written in [BBC BASIC v3](https://en.wikipedia.org/wiki/BBC_BASIC)
 
-* Originally created for the [3rd Olimex Coding Challenge 2023](https://olimex.wordpress.com/2023/06/02/agonlight-week-programming-challenge-issue-3/)
+* Originally created for the [3rd Olimex AgonLight Week Programming Challenge 2023](https://olimex.wordpress.com/2023/06/02/agonlight-week-programming-challenge-issue-3/)
 * Snac-Snake may be played on an [AgonLight retro-computer](https://www.olimex.com/Products/Retro-Computers/AgonLight2/open-source-hardware), the [AgonLight Emulator](https://github.com/astralaster/agon-light-emulator/releases), or the [BBC BASIC SDL](http://www.bbcbasic.co.uk/bbcsdl/).
 
 ## Display
@@ -28,3 +28,7 @@ Use the up, down, left, and right arrow keys to control the direction of the non
 * The default high score is fifteen hundred points.
 * High scores will be saved to a file named `snac-snak.hi` in the same folder as the `snac-snake.bas` file.
 * Snac-Snake must be run from the exact folder where the `snac-snak.hi` file resides in order for the saved high scores to be read-in by the game.
+
+## Demo Playthrough
+https://github.com/tonedef71/agon-snac-snake/assets/3978924/10138187-4962-456e-aa14-5da3b76a7628
+
