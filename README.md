@@ -4,6 +4,11 @@ Snac-Snake: a variant of the classic game [*Snake*](https://en.wikipedia.org/wik
 * Originally created for the [3rd Olimex Coding Challenge 2023](https://olimex.wordpress.com/2023/06/02/agonlight-week-programming-challenge-issue-3/)
 * Snac-Snake may be played on an [AgonLight retro-computer](https://www.olimex.com/Products/Retro-Computers/AgonLight2/open-source-hardware), the [AgonLight Emulator](https://github.com/astralaster/agon-light-emulator/releases), or the [BBC BASIC SDL](http://www.bbcbasic.co.uk/bbcsdl/).
 
+## Display
+Snac-Snake supports multiple display resolutions on the AgonLight.  The game should be played in a mode that supports a minimum of 16 colors and minimum screen dimensions of 40 columns by 22 rows.
+
+On BBC BASIC SDL, one hard-coded display resolution is supported.
+
 ## Controls
 Use the up, down, left, and right arrow keys to control the direction of the non-stop moving snake.  Throughout the game, vertical and/or horizontal portals will appear which the snake may safely pass through to arrive at the immediate opposite end of the playing field.
 
