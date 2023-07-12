@@ -5,12 +5,12 @@ Snac-Snake: a variant of the classic game [*Snake*](https://en.wikipedia.org/wik
 * Snac-Snake may be played on an [AgonLight retro-computer](https://www.olimex.com/Products/Retro-Computers/AgonLight2/open-source-hardware), the [AgonLight Emulator](https://github.com/astralaster/agon-light-emulator/releases), or the [BBC BASIC SDL](http://www.bbcbasic.co.uk/bbcsdl/).
 
 ## Display
-Snac-Snake supports multiple display resolutions on the AgonLight.  The game should be played in a mode that supports a minimum of 16 colors and minimum screen dimensions of 40 columns by 22 rows.
+Snac-Snake supports multiple display modes on the AgonLight.  The game should be played in a mode that supports a minimum of 16 colors and minimum screen dimensions of 40 columns by 22 rows.
 
-On BBC BASIC SDL, one hard-coded display resolution is supported.
+On BBC BASIC SDL, one display mode (MODE 9) is supported.
 
 ## Controls
-Use the up, down, left, and right arrow keys to control the direction of the non-stop moving snake.  Throughout the game, vertical and/or horizontal portals will appear which the snake may safely pass through to arrive at the immediate opposite end of the playing field.
+Use the up, down, left, and right arrow keys to control the direction of the non-stop moving snake.  Colliding with a wall kills the snake and ends the game.  Vertical and/or horizontal portals will appear during the game to allow the snake safe passage through to the opposite end of the playing field.
 
 ## Scoring
 * Each small white pellet eaten increases the length of the snake by one body segment and is scores five points per segment body length of the snake.  Since the minimum size of the snake is two (the head and one body segment), a small white pellet scores ten points at a minimum.
