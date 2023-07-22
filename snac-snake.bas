@@ -120,7 +120,7 @@
 11190   PROC_GROW_SNAKE(D%)
 11200   IF FN_IS_TIME(sec%, prevsec%, 2.5) THEN PROC_RANDOM_EVENT
 11210   PROC_DISPLAY_SCORES:REM Update score display
-11220   tt% = FN_INT_TIME - TI:IF SY$ = "A" THEN PROC_SLEEP(TI + SP% - FN_INT_TIME):REM Throttle if necessary// (tt% < SP%) * -(SP% - tt%)
+11220   tt% = FN_INT_TIME - TI:IF SY$ = "A" THEN PROC_SLEEP((tt% < SP%) * -(SP% - tt%)):REM Throttle if necessary
 11230 UNTIL Dead%
 11240 ENDPROC
 11250 :
