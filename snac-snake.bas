@@ -1,7 +1,7 @@
 10000 REM :::::::::::::::::::::::::::::::::::::::::::::
 10010 REM :: SNAC-SNAKE FOR AgonLight (BBC BASIC v3) ::
 10020 REM :::::::::::::::::::::::::::::::::::::::::::::
-10030 REM :: 20230722: V1.2 - fixes and improvements ::
+10030 REM :: 20230722: V1.2.1 - fixes & improvements ::
 10040 REM :::::::::::::::::::::::::::::::::::::::::::::
 10050 REM :: The game was originally created for the ::
 10060 REM :: Olimex Weekend Programming Challenge    ::
