@@ -335,473 +335,472 @@
 13340 REM ::   High Score Read   ::
 13350 REM :::::::::::::::::::::::::
 13360 DEF PROC_HISCORE_READ(game$)
-13370 LOCAL f0, status%, val%
-13380 status% = 0
+13370 LOCAL f0, error%, val%
+13380 error% = FALSE
 13390 f0% = OPENIN(game$ + ".HI")
-13400 IF f0% = 0 THEN status% = -1:GOTO 13420
-13410 INPUT#f0%, val%
-13420 CLOSE#f0%
-13430 IF status% = 0 THEN HighScore% = val%
-13440 ENDPROC
-13450 :
-13460 REM :::::::::::::::::::::::::
-13470 REM ::   High Score Write  ::
-13480 REM :::::::::::::::::::::::::
-13490 DEF PROC_HISCORE_WRITE(game$)
-13500 LOCAL f0
-13510 f0% = OPENOUT(game$ + ".HI")
-13520 PRINT#f0%, HighScore%
-13530 CLOSE#f0%
-13540 ENDPROC
-13550 :
-13560 REM :::::::::::::::::::::::::::
-13570 REM :: Empty Keyboard Buffer ::
-13580 REM :::::::::::::::::::::::::::
-13590 DEF PROC_EMPTY_KEYBOARD_BUFFER
-13600 REPEAT UNTIL INKEY(0) = -1
-13610 ENDPROC
-13620 :
-13630 REM ::::::::::::::::::::::::::::::::::::::
-13640 REM :: Custom "Screen Memory" Functions ::
-13650 REM ::::::::::::::::::::::::::::::::::::::
-13660 DEF FN_READ(x%, y%)
-13670 LOCAL n%
-13680 n% = FN_XYINDEX(x%, y%)
-13690 := screen?n%
-13700 :
-13710 DEF PROC_WRITE(x%, y%, ch%)
-13720 LOCAL n%
-13730 n% = FN_XYINDEX(x%, y%)
-13740 screen?n% = ch%
-13750 ENDPROC
-13760 :
-13770 DEF PROC_CLEAR_SCREEN
-13780 LOCAL n%, ub%
-13790 ub% = CW% * CH% - 1
-13800 FOR n% = 0 TO ub%
-13810   screen?n% = BLANK
-13820 NEXT n%
-13830 ENDPROC
-13840 :
-13850 DEF PROC_PLOT(x%, y%, ch%, co%)
-13860 PROC_WRITE(x%, y%, ch%)
-13870 VDU 31, x%, y%
-13880 IF co% < 0 THEN co% = FN_COLOR_MAP(ch%)
-13890 VDU 17, co%, ch%
-13900 ENDPROC
-13910 :
-13920 DEF PROC_DRAW(x%, y%, ch%, overwrite%)
-13930 LOCAL f%
-13940 f% = FN_READ(x%, y%):REM Is Position Currently Unoccupied?
-13950 IF (f% = BLANK OR overwrite%) THEN PROC_PLOT(x%, y%, ch%, -1)
-13960 ENDPROC
-13970 :
-13980 REM :::::::::::::::::::::::::
-13990 REM ::  Map Char To Color  ::
-14000 REM :::::::::::::::::::::::::
-14010 DEF FN_COLOR_MAP(c%)
-14020 LOCAL r%
-14030 r% = (c% = E_HEART OR c% = MON_RED)*-RED + (c% = E_FRUIT OR c% = MON_GREEN)*-GREEN + ((c% >= SN_L AND c% <= SN_U) OR c% = SN_W OR c% = E_TOADSTOOL)*-YELLOW
-14040 r% = r% + (c% = MON_BLUE OR c% = B_VERT OR c% = B_HORZ OR (c% >= B_UR AND c% <= B_DR))*-BLUE
-14050 r% = r% + (c% = MON_PINK)*-MAGENTA + (c% = E_DIAMOND OR c% = MON_CYAN)*-CYAN + (c% = DOT OR c% = MON_WHITE OR c% = E_CIRC OR c% = E_DISC)*-WHITE
-14060 := r%
-14070 :
-14080 REM ::::::::::::::::::::
-14090 REM ::  Random Event  ::
-14100 REM ::::::::::::::::::::
-14110 DEF PROC_RANDOM_EVENT
-14120 LOCAL c%, f, free%, i%, r, rx%, ry%
-14130 REM IF FN_RND_PCT(10) THEN GOTO ENDPROC:REM No new obstacle
-14140 rx% = FN_RND_X:ry% = FN_RND_Y:REM Determine random position
-14150 free% = (FN_READ(rx%, ry%) = BLANK):IF NOT free% THEN 14230:REM Ensure the position is free
-14160 r = RND(1)
-14170 IF (r < .85) THEN 14200
-14180 i% = FN_NEXT_MONSTER_SLOT
-14190 IF (-1 < i%) THEN c% = ASC(MID$(MO$, i% + 1, 1)):PROC_MANAGE_MONSTER(rx%, ry%, c%, TRUE):f = 9.5:GOTO 14220:ELSE c% = E_DISC:GOTO 14210
-14200 c% = (r >= 0 AND r < .5)*-DOT + (r >= .5 AND r < .7)*-E_CIRC + (r >= .7 AND r < .85)*-FN_RND_EDIBLE
-14210 PROC_DRAW(rx%, ry%, c%, FALSE):f = 4.5
-14220 PROC_SOUND(f, 2)
-14230 ENDPROC
-14240 :
-14250 REM :::::::::::::::::
-14260 REM ::   REM Eat   ::
-14270 REM :::::::::::::::::
-14280 DEF FN_EAT(x%, y%)
-14290 LOCAL c%, n%, s%
-14300 c% = FN_READ(x%, y%):REM PROC_COUT(STR$(x%)+" "+STR$(y%)+" "+STR$(c%)+"      ",0)
-14310 n% = (c% = BLANK OR c% = BLANK_X)*0 + ((c% = SN_W AND NOT Rvs_Dir%) OR (c% >= MON_RED AND c% <= MON_GREEN) OR (c% = E_TOADSTOOL))*-1 + (c% = E_CIRC)*-2 + (c% = E_DISC)*-3
-14320 n% = n% + (c% = DOT OR (c% >= E_HEART AND c% <= E_FRUIT))*-4 + (c% = MON_WHITE OR c% = MON_BLUE)*-5
-14330 n% = n% + (c% = B_VERT OR c% = B_HORZ OR c% = B_UR OR c% = B_UL OR c% = B_DL OR c% = B_DR)*-6
-14340 ON n% GOTO 14350,14360,14370,14390,14420,14440:ELSE 14450
-14350 Dead% = TRUE:r% = FALSE:GOTO 14460:REM Collided with self, toadstool or deadly monster
-14360 PROC_SHRINK_SNAKE(1):GOTO 14400:REM The open circle shrinks the snake
-14370 PROC_UPDATE_MONSTER_STATE(TRUE, MON_BLUE):PROC_CHARGE:REM The filled circle makes existing monsters vulnerable
-14380 GOTO 14400
-14390 s% = 2 + (c% = DOT) + (c% = E_DISC)*2:PROC_INC_SIZE(s%):REM Edible increases size of snake
-14400 Score% = Score% + (c% = DOT)*-(Size% * 5) + (c% = E_HEART)*-100 + (c% = E_DIAMOND)*-200 + (c% = E_FRUIT)*-500 + (c% = E_CIRC OR c% = E_DISC)*-25
-14410 GOTO 14450
-14420 Score% = Score% + (c% = MON_BLUE)*-500 + (c% = MON_WHITE)*-1000:PROC_MANAGE_MONSTER(x%, y%, c%, FALSE):PROC_SHRINK_SNAKE(1):REM Eating cowardly monster shrinks the snake
-14430 GOTO 14450
-14440 Dead% = TRUE:REM Collided with boundary
-14450 IF (Dead% <> TRUE AND c% <> BLANK AND c% <> BLANK_X AND c% <> SN_W) THEN PROC_SOUND(16, 2)
-14460 := (Dead%) + (NOT Dead%) * -c%
-14470 :
-14480 REM :::::::::::::::::::::::::::
-14490 REM ::    Recoil The Snake   ::
-14500 REM :::::::::::::::::::::::::::
-14510 DEF FN_RECOIL_SNAKE
-14520 LOCAL i%
-14530 i% = P - Size%:REM Locate tail end of snake
-14540 IF i% < 0 THEN i% = i% + MAX_SIZE%:REM Wrap around to the end
-14550 PROC_ERASE(X(i%), Y(i%))
-14560 := i%
-14570 :
-14580 REM ::::::::::::::::::::::::::
-14590 REM ::   Shrink The Snake   ::
-14600 REM ::::::::::::::::::::::::::
-14610 DEF PROC_SHRINK_SNAKE(d%)
-14620 LOCAL n%
-14630 PROC_INC_SIZE(-d%)
-14640 n% = FN_RECOIL_SNAKE
-14650 ENDPROC
-14660 :
-14670 REM ::::::::::::::::::::::::::
-14680 REM ::  Grow Out The Snake  ::
-14690 REM ::::::::::::::::::::::::::
-14700 DEF PROC_GROW_SNAKE(d%)
-14710 LOCAL i%, ch%, dx%, dy%, nx%, ny%
-14720 dx% = FN_X_DELTA(d%):dy% = FN_Y_DELTA(d%)
-14730 nx% = X(P) + dx%:ny% = Y(P) + dy%
-14740 ch% = FN_EAT(nx%, ny%)
-14750 IF ch% < 0 THEN 14880
-14760 IF nx% <= UX% THEN nx% = LX% - 1:REM Snake entered Left Portal; Exit Out Right Portal
-14770 IF nx% >= LX% THEN nx% = UX% + 1:REM Snake entered Right Portal; Exit Out Left Portal
-14780 IF ny% <= UY% THEN ny% = LY% - 1:REM Snake entered Top Portal; Exit Out Bottom Portal
-14790 IF ny% >= LY% THEN ny% = UY% + 1:REM Snake entered Bottom Portal; Exit Out Top Portal
-14800 P = FN_NEXT_POS(P)
-14810 i% = FN_RECOIL_SNAKE
-14820 X(P) = nx%:Y(P) = ny%
-14830 i% = FN_NEXT_POS(i%):IF i% = P THEN 14850
-14840 REPEAT:PROC_DRAW(X(i%), Y(i%), SN_W, TRUE):i% = FN_NEXT_POS(i%):UNTIL i% = P
-14850 ch% = (AF <> 0) * -SN_W + (AF = 0) * -(d% + SN_L - 1):REM Which Animation Frame To Display For Snake's Head
-14860 PROC_DRAW(X(P), Y(P), ch%, TRUE)
-14870 AF = (AF + 1) MOD 2
-14880 ENDPROC
-14890 :
-14900 REM ::::::::::::::::::::::::::::::::
-14910 REM :: Increase The Size Of Snake ::
-14920 REM ::::::::::::::::::::::::::::::::
-14930 DEF PROC_INC_SIZE(n%)
-14940 Size% = FN_MAX(FN_MIN(Size% + n%, MAX_SIZE%), 2)
-14950 ENDPROC
-14960 :
-14970 REM :::::::::::::::::::::::::::::::::::::
-14980 REM :: Check For Reversal Of Direction ::
-14990 REM :::::::::::::::::::::::::::::::::::::
-15000 DEF FN_CHECK_FOR_REVERSE_DIRECTION(old%, new%)
-15010 REM 4 = UP; 3= DOWN; 1 = LEFT; 2 = RIGHT
-15020 REM := (old% = 4 AND new% = 3) OR (old% = 3 AND new% = 4) OR (old% = 1 AND new% = 2) OR (old% = 2 AND new% = 1)
-15030 := (old% OR new%) = 7 OR (old% OR new%) = 3
-15040 :
-15050 REM :::::::::::::::::::::::::::::::::
-15060 REM :: Monster Management Routines ::
-15070 REM :::::::::::::::::::::::::::::::::
-15080 DEF PROC_MANAGE_MONSTER(x%, y%, c%, state%)
-15090 LOCAL pos%:REM PROC_COUT(STR$(x%)+","+STR$(y%)+" "+STR$(c%)+"  ", 2)
-15100 IF state% = FALSE THEN PROC_CLEAR_MONSTER(x%, y%)
-15110 IF state% = TRUE THEN PROC_NEW_MONSTER(x%, y%, c%):PROC_DRAW(x%, y%, c%, TRUE)
-15120 IF state% = MON_BLUE OR state% = MON_WHITE THEN PROC_DRAW(x%, y%, state%, TRUE):IF state% = MON_BLUE THEN PROC_MON_GO_WHITE
-15130 IF state% = MON_RESET THEN PROC_DRAW(x%, y%, c%, TRUE)
-15140 ENDPROC
-15150 :
-15160 DEF PROC_MANAGE_MONSTER_BY_POS(pos%, c%, state%)
-15170 LOCAL x%, y%
-15180 IF -1 <> pos% THEN y% = pos% DIV CW%:x% = pos% MOD CW%:PROC_MANAGE_MONSTER(x%, y%, c%, state%)
-15190 ENDPROC
-15200 :
-15210 DEF PROC_NEW_MONSTER(x%, y%, c%)
-15220 LOCAL i%
-15230 IF M_Count% >= MAX_MONSTERS% THEN 15260
-15240 i% = FN_NEXT_MONSTER_SLOT
-15250 IF -1 <> i% THEN MP%(i%) = FN_HASH(x%, y%):M_Position% = i%:M_Count% = M_Count% + 1
-15260 ENDPROC
-15270 :
-15280 DEF FN_NEXT_MONSTER_SLOT
-15290 LOCAL found%, i%, r%
-15300 found% = FALSE:i% = 0
-15310 REPEAT
-15320   IF -1 = MP%(i%) THEN found% = TRUE:ELSE i% = i% + 1
-15330 UNTIL found% OR i% = MAX_MONSTERS%
-15340 IF found% THEN r% = i%:ELSE r% = -1
-15350 := r%
-15360 :
-15370 DEF FN_FIND_MONSTER(x%, y%)
-15380 LOCAL found%, i%, r%
-15390 found% = FALSE:i% = 0
-15400 REPEAT
-15410   IF (FN_HASH(x%, y%) = MP%(i%)) THEN found% = TRUE:ELSE i% = i% + 1
-15420 UNTIL found% OR i% = MAX_MONSTERS%
-15430 IF found% THEN r% = i%:ELSE r% = -1
-15440 := r%
-15450 :
-15460 DEF FN_MONSTER_AT_POS(pos%)
-15470 LOCAL r%, x%, y%
-15480 r% = -1:IF -1 <> pos% THEN y% = pos% DIV CW%:x% = pos% MOD CW%:r% = FN_READ(x%, y%)
-15490 := r%
-15500 :
-15510 DEF PROC_CLEAR_MONSTER(x%, y%)
-15520 LOCAL i%
-15530 i% = FN_FIND_MONSTER(x%, y%)
-15540 IF -1 <> i% THEN MP%(i%) = -1:M_Count% = M_Count% - 1
-15550 ENDPROC
-15560 :
-15570 DEF PROC_UPDATE_MONSTER_STATE(oldState%, newState%)
-15580 LOCAL c%, i%
-15590 FOR i% = 0 TO MAX_MONSTERS% - 1
-15600   c% = (newState% = MON_RESET) * -ASC(MID$(MO$, i%+1, 1)) + (newState% = MON_WHITE AND oldState% = MON_BLUE) * -FN_MONSTER_AT_POS(MP%(i%))
-15610   IF -1 <> MP%(i%) AND (oldState% = c% OR oldState% = TRUE) THEN PROC_MANAGE_MONSTER_BY_POS(MP%(i%), c%, newState%)
-15620 NEXT i%
-15630 ENDPROC
-15640 :
-15650 DEF PROC_MONSTER_COLOR_CHECK
-15660 IF MonGoWhite% <> FALSE AND FN_INT_TIME >= MonGoWhite% THEN MonGoWhite% = FALSE:PROC_UPDATE_MONSTER_STATE(MON_BLUE, MON_WHITE)
-15670 IF MonReset% <> FALSE AND FN_INT_TIME >= MonReset% THEN MonReset% = FALSE:PROC_UPDATE_MONSTER_STATE(TRUE, MON_RESET)
-15680 ENDPROC
-15690 :
-15700 REM :::::::::::::::::::::::::::::::::::::::::::
-15710 REM ::  Calculate type index of a clockwise  ::
-15720 REM ::  position on a box's perimeter        ::
-15730 REM :::::::::::::::::::::::::::::::::::::::::::
-15740 DEF FN_CLOCKWISE_BOX_SIDE_INDEX(pos%, width%, height%)
-15750 REM 0 = UPPER_LEFT_CORNER, 1 = UPPER_MIDDLE, 2 = UPPER_RIGHT_CORNER, 3 = MIDDLE_RIGHT, 4 = LOWER_RIGHT_CORNER, 5 = LOWER_MIDDLE, 6 = LOWER_LEFT_CORNER, 7 = MIDDLE_LEFT
-15760 LOCAL r%
-15770 r% = (pos% > 0 AND pos% < width% - 1) * -1 + (pos% = width% - 1) * -2 + (pos% >= width% AND pos% < width% + height% - 2) * -3 + (pos% = width% + height% - 2) * -4
-15780 r% = r% + (pos% > width% + height% - 2 AND pos% < 2 * width% + height% - 3) * -5 + (pos% = 2 * width% + height% - 3) * -6 + (pos% > 2 * width% + height% - 3) * -7
-15790 :=r%
-15800 :
-15810 REM ::::::::::::::::::::::::::
-15820 REM ::  Draw Box Clockwise  ::
-15830 REM ::::::::::::::::::::::::::
-15840 DEF PROC_CLOCKWISE_BOX(ux%, uy%, width%, height%, color%)
-15850 LOCAL aq%, bq%, ch%, i%, p%, x%, y%
-15860 aq% = width% + height% - 2:bq% = aq% + width%:p% = bq% + height% - 2
-15870 FOR i% = 0 TO p% - 1
-15880   x% = (i% < width%) * -i% + (i% > (width%-1) AND i% < aq%) * -(width%-1) + (i% >= aq% AND i% < bq%) * (i% - (bq% - 1)) + (i% >= bq%) * 0
-15890   y% = (i% < width%) * 0 + (i% > (width%-1) AND i% < aq%) * -(i% - (width%-1)) + (i% >= aq% AND i% < bq%) * -(height%-1) + (i% >= bq%) * -((height%-2) - (i% - bq%))
-15900   ch% = ASC(MID$(BX$, FN_CLOCKWISE_BOX_SIDE_INDEX(i%, width%, height%) + 1, 1))
-15910   PROC_PLOT(ux% + x%, uy% + y%, ch%, color%)
-15920 NEXT i%
-15930 ENDPROC
-15940 :
-15950 REM :::::::::::::::::::::::::
-15960 REM ::  Draw Playing Field ::
-15970 REM :::::::::::::::::::::::::
-15980 DEF PROC_DRAW_PLAYING_FIELD(ux%, uy%, width%, height%)
-15990 PROC_CLOCKWISE_BOX(ux%, uy%, width%, height%, BLUE)
-16000 ENDPROC
-16010 :
-16020 REM :::::::::::::::::::
-16030 REM :: Draw Portals  ::
-16040 REM :::::::::::::::::::
-16050 DEF PROC_DRAW_PORTALS(horizontal%, vertical%, ux%, uy%, width%, height%)
-16060 LOCAL ch%, h%, i%, j%, lx%, ly%, pColor%, v%, wColor%
-16070 pColor% = CYAN:wColor% = BLUE:h% = ux% + width% DIV 2 - 2:v% = uy% + height% DIV 2 - 2:lx% = ux% + width% - 1:ly% = uy% + height% - 1
-16080 FOR i% = 0 TO 1:REM Vertical portal
-16090   FOR j% = 0 TO 2
-16100     ch% = (vertical%) * -(ASC(MID$(PV$(i%), j% + 1, 1))) + (NOT vertical%) * -B_HORZ
-16110     PROC_PLOT(h% + j%, (i% = 0) * -uy% + (i% = 1) * -ly%, ch%, (ch% = BLANK_X) * -BLACK + (ch% = B_HORZ) * -wColor% + ((ch% <> BLANK_X) AND (ch% <> B_HORZ)) * -pColor%)
-16120   NEXT j%
-16130 NEXT i%
-16140 FOR i% = 0 TO 1:REM Horizontal portal
-16150   FOR j% = 0 TO 2
-16160     ch% = (horizontal%) * -(ASC(MID$(PH$(i%), j% + 1, 1))) + (NOT horizontal%) * -B_VERT
-16170     PROC_PLOT((i% = 0) * -ux% + (i% = 1) * -lx%, v% + j%, ch%, (ch% = BLANK_X) * -BLACK + (ch% = B_VERT) * -wColor% + ((ch% <> BLANK_X) AND (ch% <> B_VERT)) * -pColor%)
-16180   NEXT j%
-16190 NEXT i%
-16200 ENDPROC
-16210 :
-16220 REM :::::::::::::::::::::::::::
-16230 REM ::  Update Portal State  ::
-16240 REM :::::::::::::::::::::::::::
-16250 DEF PROC_UPDATE_PORTAL_STATE
-16260 LOCAL horizontal%, vertical%
-16270 Portal_State% = (Portal_State% + 1) MOD 4
-16280 IF Portal_State% = 0 THEN horizontal% = FALSE: vertical% = FALSE
-16290 IF Portal_State% = 1 THEN horizontal% = TRUE: vertical% = FALSE
-16300 IF Portal_State% = 2 THEN horizontal% = TRUE: vertical% = TRUE
-16310 IF Portal_State% = 3 THEN horizontal% = FALSE: vertical% = TRUE
-16320 PROC_DRAW_PORTALS(horizontal%, vertical%, UX%, UY%, CW% - 2*UX%, CH% - UY%)
-16330 FOR i% = 1 TO 2:PROC_SOUND(i% * 24, 1.5 * i%):NEXT i%
-16340 ENDPROC
-16350 :
-16360 REM ::::::::::::::::::::::::::::::::
-16370 REM ::       Clockwise Plot       ::
-16380 REM ::::::::::::::::::::::::::::::::
-16390 DEF PROC_CLOCKWISE_PLOT(pos%, color%, char%, ux%, uy%, width%, height%)
-16400 LOCAL cx%, cy%, a%, b%, c%
-16410 a% = width% + height% - 2:b% = a% + width%:c% = b% + height% - 2
-16420 cx% = (pos% < width%) * -pos% + (pos% > (width% - 1) AND pos% < a%) * -(width% - 1)
-16430 cx% = cx% + (pos% >= a% AND pos% < b%) * (pos% - (b% - 1)) + (pos% >= b%) * 0
-16440 cy% = (pos% < width%) * 0 + (pos% > (width% - 1) AND pos% < a%) * -(pos% - (width% - 1))
-16450 cy% = cy% + (pos% >= a% AND pos% < b%) * -(height% - 1) + (pos% >= b%) * -((height% - 2) - (pos% - b%))
-16460 VDU 31,ux% + cx%,uy% + cy%,17,color%,char%:REM Plot a character on the path
-16470 ENDPROC
-16480 :
-16490 REM :::::::::::::::::::::::
-16500 REM ::  Death Animation  ::
-16510 REM :::::::::::::::::::::::
-16520 DEF PROC_DEATH_ANIMATION(x%, y%)
-16530 LOCAL ch%, fr$, i%, n%
-16540 REPEAT:Size% = Size% - 1:n% = FN_RECOIL_SNAKE:PROC_SOUND(2 * Size%, 2):PROC_SOUND(0, 0):PROC_SLEEP(10):UNTIL Size% < 2
-16550 fr$ = RIGHT$("0"+STR$(SN_W), 3)+STR$(SN_U)+STR$(SN_D1)+STR$(SN_D2)+STR$(SN_D3)+STR$(SN_D4)+STR$(SN_D5)+STR$(SN_D6)+"0"+STR$(BLANK)
-16560 FOR i% = 1 TO LEN(fr$) DIV 3 STEP 2
-16570   ch% = VAL(MID$(fr$, 3 * (i% - 1) + 1, 3))
-16580   VDU 31, x%, y%, 17, YELLOW, ch%:PROC_SOUND(i% + 8, 2):PROC_SLEEP(20)
-16590 NEXT i%:PROC_SOUND(4, 3)
-16600 ENDPROC
-16610 :
-16620 REM :::::::::::::::::::
-16630 REM ::    Welcome    ::
-16640 REM :::::::::::::::::::
-16650 DEF PROC_WELCOME
-16660 LOCAL boxh%, boxw%, c%, cc%, ch$, ex%, perimeter%, t%, t$, ux%, uy%
-16670 boxh% = 18:boxw% = 38:cc% = 0:ex% = FALSE:perimeter% = 2 * (boxw% + boxh% - 2):t% = 2:ux% = (CW% - boxw%) DIV 2:uy% = 0
-16680 PROC_HIDE_CURSOR
-16690 CLS:PROC_DEFAULT_COLORS
-16700 PRINT TAB(0, uy% + 1);
-16710 PROC_CENTER(" Welcome to " + CHR$(17)+CHR$(YELLOW) + GameName$ + CHR$(17)+CHR$(WHITE)+ "..."):PRINT:PRINT
-16720 PROC_CENTER(" A nostalgic variant of the classic"):PRINT
-16730 PROC_CENTER(" SNAKE game."):PRINT:PRINT
-16740 PROC_CENTER(" Use the four arrow keys to maneuver"):PRINT
-16750 PROC_CENTER(" the starving little snake to snack"):PRINT
-16760 PROC_CENTER(" on pellets and other tasty morsels."):PRINT
-16770 PROC_CENTER(" Avoid the walls and spooky little"):PRINT
-16780 PROC_CENTER(" monsters while trying to avoid"):PRINT
-16790 PROC_CENTER(" chomping on yourself like an"):PRINT
-16800 COLOUR YELLOW:PROC_CENTER(" Ouroboros."):PRINT:PRINT
-16810 COLOUR WHITE:PROC_CENTER(" Good luck and have fun!"):PRINT:PRINT
-16820 COLOUR CYAN:PROC_CENTER("Hit a key to continue")
-16830 REPEAT
-16840   PROC_CLOCKWISE_PLOT(cc%, BLACK, BLANK, ux%, uy%, boxw%, boxh%)
-16850   cc% = (cc% + 1) MOD perimeter%
-16860   PROC_CLOCKWISE_PLOT(cc%, cc% MOD 6 + 1, MON_RED, ux%, uy%, boxw%, boxh%)
-16870   IF SY$ = "A" THEN c% = INKEY(DL%):PROC_EMPTY_KEYBOARD_BUFFER:ELSE c% = INKEY(TK/DL%)
-16880   IF c% > 0 THEN ex% = TRUE
-16890 UNTIL ex%
-16900 boxh% = 18:boxw% = 38:cc% = 0:ex% = FALSE:perimeter% = 2 * (boxw% + boxh% - 2):ux% = (CW% - boxw%) DIV 2:uy% = 0
-16910 CLS:PROC_DEFAULT_COLORS
-16920 PRINT TAB(0, uy% + 2);
-16930 COLOUR YELLOW:PROC_CENTER(STRING$(t%, " ")+"....  Score"+STRING$(2, " ")+"Resize"):PRINT:PRINT
-16940 t$ = STRING$(t%, " ")+CHR$(17)+CHR$(RED)+CHR$(MON_RED)+CHR$(17)+CHR$(MAGENTA)+CHR$(MON_RED)+CHR$(17)+CHR$(CYAN)+CHR$(MON_RED)+CHR$(17)+CHR$(GREEN)+CHR$(MON_RED)
-16950 t$ = t$ + STRING$(2, " ")+CHR$(17)+CHR$(WHITE)+"Death"+STRING$(2, " ")+CHR$(SKULL)+STRING$(6, " "):PROC_CENTER(t$):PRINT
-16960 PROC_CENTER(STRING$(t%, " ")+CHR$(17)+CHR$(BLUE)+CHR$(MON_RED)+STRING$(5, " ")+CHR$(17)+CHR$(WHITE)+"  500"+STRING$(2, " ")+"-"+CHR$(17)+CHR$(YELLOW)+CHR$(SN_W)+STRING$(4, " ")):PRINT
-16970 PROC_CENTER(STRING$(t%, " ")+CHR$(17)+CHR$(WHITE)+CHR$(MON_RED)+STRING$(5, " ")+" 1000"+STRING$(2, " ")+"-"+CHR$(17)+CHR$(YELLOW)+CHR$(SN_W)+STRING$(4, " ")):PRINT
-16980 PROC_CENTER(STRING$(t%, " ")+CHR$(17)+CHR$(WHITE)+CHR$(DOT)+STRING$(5, " ")+"  5x"+CHR$(17)+CHR$(YELLOW)+CHR$(SN_W)+STRING$(2, " ")+CHR$(17)+CHR$(WHITE)+"+"+CHR$(17)+CHR$(YELLOW)+CHR$(SN_W)+STRING$(4, " ")):PRINT
-16990 PROC_CENTER(STRING$(t%, " ")+CHR$(17)+CHR$(WHITE)+CHR$(E_CIRC)+STRING$(5, " ")+"   25"+STRING$(2, " ")+"-"+CHR$(17)+CHR$(YELLOW)+CHR$(SN_W)+STRING$(4, " ")):PRINT
-17000 PROC_CENTER(STRING$(t%, " ")+CHR$(17)+CHR$(WHITE)+CHR$(E_DISC)+STRING$(5, " ")+"   25"+STRING$(2, " ")+STRING$(6, " ")):PRINT
-17010 PROC_CENTER(STRING$(t%, " ")+CHR$(17)+CHR$(RED)+CHR$(E_HEART)+STRING$(5, " ")+CHR$(17)+CHR$(WHITE)+"  100"+STRING$(2, " ")+"+"+CHR$(17)+CHR$(YELLOW)+CHR$(SN_W)+CHR$(SN_W)+STRING$(3, " ")):PRINT
-17020 PROC_CENTER(STRING$(t%, " ")+CHR$(17)+CHR$(CYAN)+CHR$(E_DIAMOND)+STRING$(5, " ")+CHR$(17)+CHR$(WHITE)+"  200"+STRING$(2, " ")+"+"+CHR$(17)+CHR$(YELLOW)+CHR$(SN_W)+CHR$(SN_W)+STRING$(3, " ")):PRINT
-17030 PROC_CENTER(STRING$(t%, " ")+CHR$(17)+CHR$(GREEN)+CHR$(E_FRUIT)+STRING$(5, " ")+CHR$(17)+CHR$(WHITE)+"  500"+STRING$(2, " ")+"+"+CHR$(17)+CHR$(YELLOW)+CHR$(SN_W)+CHR$(SN_W)+STRING$(3, " ")):PRINT
-17040 PROC_CENTER(STRING$(t%, " ")+CHR$(17)+CHR$(YELLOW)+CHR$(E_TOADSTOOL)+STRING$(5, " ")+CHR$(17)+CHR$(WHITE)+"Death"+STRING$(2, " ")+CHR$(SKULL)+STRING$(6, " ")):PRINT:PRINT
-17050 COLOUR GREEN:PROC_CENTER("Hit a key to begin playing")
-17060 PROC_CLOCKWISE_BOX(ux% + 1, uy% + 1, boxw% - 2, boxh% - 2, CYAN)
-17070 ch$=CHR$(SN_R)+CHR$(SN_R)+CHR$(SN_D)+CHR$(SN_D)+CHR$(SN_L)+CHR$(SN_L)+CHR$(SN_U)+CHR$(SN_U)
-17080 REPEAT
-17090   PROC_CLOCKWISE_PLOT(cc% - 1, BLACK, BLANK, ux%, uy%, boxw%, boxh%):PROC_CLOCKWISE_PLOT(cc%, BLACK, BLANK, ux%, uy%, boxw%, boxh%)
-17100   cc% = (cc% + 1) MOD perimeter%
-17110   c% = (cc% MOD 2 <> 0) * -SN_W + (cc% MOD 2 = 0) * -ASC(MID$(ch$, FN_CLOCKWISE_BOX_SIDE_INDEX(cc%, boxw%, boxh%) + 1, 1))
-17120   PROC_CLOCKWISE_PLOT(cc% - 1, YELLOW, SN_W, ux%, uy%, boxw%, boxh%):PROC_CLOCKWISE_PLOT(cc%, YELLOW, c%, ux%, uy%, boxw%, boxh%)
-17130   IF SY$ = "A" THEN c% = INKEY(DL%):PROC_EMPTY_KEYBOARD_BUFFER:ELSE c% = INKEY(TK/DL%)
-17140   IF c% > 0 THEN ex% = TRUE
-17150 UNTIL ex%
-17160 PROC_DEFAULT_COLORS
-17170 ENDPROC
-17180 :
-17190 REM :::::::::::::::::
-17200 REM ::  Game Over  ::
-17210 REM :::::::::::::::::
-17220 DEF PROC_GAME_OVER
-17230 VDU 17,RED:PROC_FULL_CENTER_TEXT("GAME OVER")
-17240 PROC_SLEEP(200):VDU 17,YELLOW
-17250 PROC_HISCORE_WRITE(GameName$)
-17260 ENDPROC
-17270 :
-17280 REM :::::::::::::::::::::::
-17290 REM :: Play Simple Sound ::
-17300 REM :::::::::::::::::::::::
-17310 DEF PROC_SOUND(index%, duration%)
-17320 LOCAL constant%:constant% = 12.2
-17330 SOUND 1, -10, index% * constant%, duration%
-17340 ENDPROC
-17350 :
-17360 REM :::::::::::::::::::::::::
-17370 REM :: Play Musical Phrase ::
-17380 REM :::::::::::::::::::::::::
-17390 DEF PROC_PLAY(notes$)
-17400 LOCAL d%, j%, l%, p%
-17410 l% = LEN(notes$) DIV 3
-17420 FOR j% = 1 TO l% STEP 2
-17430   p% = VAL(MID$(notes$, 3 * (j% - 1) + 1, 3)):d% = VAL(MID$(notes$, 3 * (j% - 1) + 4, 3))
-17440   SOUND 1, -10, p%, d%
-17450   SOUND 1, 0, p%, 1:REM Stacatto the currently playing sound
-17460 NEXT j%
-17470 ENDPROC
-17480 :
-17490 REM :::::::::::::::::::
-17500 REM ::  CHARGE!!!!!  ::
-17510 REM :::::::::::::::::::
-17520 DEF PROC_CHARGE
-17530 PROC_PLAY("129001149001165001177004165002177008"):REM COUNT,PITCH,DURATION
-17540 ENDPROC
-17550 :
-17560 REM ::::::::::::::::::::::::::
-17570 REM :: Define Custom Colors ::
-17580 REM ::::::::::::::::::::::::::
-17590 DEF PROC_REDEFINE_COLORS
-17600 IF SY$="A" AND FN_COLORCOUNT < &40 THEN VDU 19,C_ORANGE,&FF,&FF,&80,&00:ELSE COLOUR C_ORANGE,&FF,&80,&00
-17610 ENDPROC
-17620 :
-17630 REM ::::::::::::::::::::::::::::::
-17640 REM :: Define Custom Characters ::
-17650 REM ::::::::::::::::::::::::::::::
-17660 DEF PROC_REDEFINE_CHARS
-17670 VDU 23,BLANK_X,0,0,0,0,0,0,0,0:REM BLANK
-17680 VDU 23,DOT,0,0,0,24,24,0,0,0:REM DOT
-17690 VDU 23,SN_L,0,60,30,14,14,30,60,0:REM LEFT(3)
-17700 VDU 23,SN_R,0,60,120,112,112,120,60,0:REM RIGHT(3)
-17710 VDU 23,SN_D,0,60,126,126,102,66,0,0:REM DOWN(3)
-17720 VDU 23,SN_U,0,0,66,102,126,126,60,0:REM UP(3)
-17730 VDU 23,SN_W,0,60,126,126,126,126,60,0:REM WHOLE(3)
-17740 VDU 23,E_HEART,54,127,127,127,62,28,8,0:REM HEART(1)
-17750 VDU 23,E_DIAMOND,8,28,62,127,62,28,8,0:REM DIAMOND(6)
-17760 VDU 23,E_FRUIT,0,12,24,60,60,60,24,0:REM FRUIT(2)
-17770 VDU 23,E_TOADSTOOL,0,0,24,60,60,8,24,0:REM TOADSTOOL(3)
-17780 VDU 23,E_CIRC,0,60,126,102,102,126,60,0:REM CIRCLE(7)
-17790 VDU 23,E_DISC,0,60,126,126,126,126,60,0:REM FILLED CIRCLE(7)
-17800 VDU 23,MON_WHITE,0,60,126,90,126,126,90,0:REM WHITE(7)
-17810 VDU 23,MON_BLUE,0,60,126,90,126,126,90,0:REM BLUE(4)
-17820 VDU 23,MON_RED,0,60,126,90,126,126,90,0:REM RED(1)
-17830 VDU 23,MON_PINK,0,60,126,90,126,126,90,0:REM MAGENTA(5)
-17840 VDU 23,MON_CYAN,0,60,126,90,126,126,90,0:REM CYAN(6)
-17850 VDU 23,MON_GREEN,0,60,126,90,126,126,90,0:REM GREEN(2)
-17860 VDU 23,B_VERT,24,24,24,24,24,24,24,24:REM VERTICAL(4)
-17870 VDU 23,B_HORZ,0,0,0,255,255,0,0,0:REM HORIZONTAL(4)
-17880 VDU 23,B_UR,0,0,0,7,15,28,24,24:REM UPRIGHT C(4)
-17890 VDU 23,B_UL,0,0,0,224,240,56,24,24:REM UPLEFT C(4)
-17900 VDU 23,B_DL,24,24,56,240,224,0,0,0:REM DOWNLEFT C(4)
-17910 VDU 23,B_DR,24,24,28,15,7,0,0,0:REM DOWN RIGHT C(4)
-17920 VDU 23,SN_D1,0,0,0,102,126,126,60,0:REM DYING 1
-17930 VDU 23,SN_D2,0,0,0,0,126,126,60,0:REM DYING 2
-17940 VDU 23,SN_D3,0,0,0,0,126,126,60,0:REM DYING 3
-17950 VDU 23,SN_D4,0,0,0,0,24,60,60,0:REM DYING 4
-17960 VDU 23,SN_D5,0,0,0,0,24,24,60,0:REM DYING 5
-17970 VDU 23,SN_D6,0,0,0,0,8,24,16,0:REM DYING 6
-17980 VDU 23,SKULL,0,189,126,90,126,165,24,0:REM SKULL(7)
-17990 ENDPROC
-18000 :
-18010 REM ::::::::::::::::::::::::::::::
-18020 REM ::  Error Handling Routine  ::
-18030 REM ::::::::::::::::::::::::::::::
-18040 DEF PROC_HANDLE_ERROR
-18050 IF ERR <> 17 THEN PROC_DEFAULT_COLORS:PROC_SHOW_CURSOR:REPORT:PRINT" @line #";ERL:STOP
-18060 ENDPROC
+13400 IF f0% <> 0 THEN INPUT#f0%, val%:ELSE error% = TRUE
+13410 CLOSE#f0%
+13420 IF NOT error% THEN HighScore% = val%
+13430 ENDPROC
+13440 :
+13450 REM :::::::::::::::::::::::::
+13460 REM ::   High Score Write  ::
+13470 REM :::::::::::::::::::::::::
+13480 DEF PROC_HISCORE_WRITE(game$)
+13490 LOCAL f0
+13500 f0% = OPENOUT(game$ + ".HI")
+13510 IF f0% <> 0 THEN PRINT#f0%, HighScore%
+13520 CLOSE#f0%
+13530 ENDPROC
+13540 :
+13550 REM :::::::::::::::::::::::::::
+13560 REM :: Empty Keyboard Buffer ::
+13570 REM :::::::::::::::::::::::::::
+13580 DEF PROC_EMPTY_KEYBOARD_BUFFER
+13590 REPEAT UNTIL INKEY(0) = -1
+13600 ENDPROC
+13610 :
+13620 REM ::::::::::::::::::::::::::::::::::::::
+13630 REM :: Custom "Screen Memory" Functions ::
+13640 REM ::::::::::::::::::::::::::::::::::::::
+13650 DEF FN_READ(x%, y%)
+13660 LOCAL n%
+13670 n% = FN_XYINDEX(x%, y%)
+13680 := screen?n%
+13690 :
+13700 DEF PROC_WRITE(x%, y%, ch%)
+13710 LOCAL n%
+13720 n% = FN_XYINDEX(x%, y%)
+13730 screen?n% = ch%
+13740 ENDPROC
+13750 :
+13760 DEF PROC_CLEAR_SCREEN
+13770 LOCAL n%, ub%
+13780 ub% = CW% * CH% - 1
+13790 FOR n% = 0 TO ub%
+13800   screen?n% = BLANK
+13810 NEXT n%
+13820 ENDPROC
+13830 :
+13840 DEF PROC_PLOT(x%, y%, ch%, co%)
+13850 PROC_WRITE(x%, y%, ch%)
+13860 VDU 31, x%, y%
+13870 IF co% < 0 THEN co% = FN_COLOR_MAP(ch%)
+13880 VDU 17, co%, ch%
+13890 ENDPROC
+13900 :
+13910 DEF PROC_DRAW(x%, y%, ch%, overwrite%)
+13920 LOCAL f%
+13930 f% = FN_READ(x%, y%):REM Is Position Currently Unoccupied?
+13940 IF (f% = BLANK OR overwrite%) THEN PROC_PLOT(x%, y%, ch%, -1)
+13950 ENDPROC
+13960 :
+13970 REM :::::::::::::::::::::::::
+13980 REM ::  Map Char To Color  ::
+13990 REM :::::::::::::::::::::::::
+14000 DEF FN_COLOR_MAP(c%)
+14010 LOCAL r%
+14020 r% = (c% = E_HEART OR c% = MON_RED)*-RED + (c% = E_FRUIT OR c% = MON_GREEN)*-GREEN + ((c% >= SN_L AND c% <= SN_U) OR c% = SN_W OR c% = E_TOADSTOOL)*-YELLOW
+14030 r% = r% + (c% = MON_BLUE OR c% = B_VERT OR c% = B_HORZ OR (c% >= B_UR AND c% <= B_DR))*-BLUE
+14040 r% = r% + (c% = MON_PINK)*-MAGENTA + (c% = E_DIAMOND OR c% = MON_CYAN)*-CYAN + (c% = DOT OR c% = MON_WHITE OR c% = E_CIRC OR c% = E_DISC)*-WHITE
+14050 := r%
+14060 :
+14070 REM ::::::::::::::::::::
+14080 REM ::  Random Event  ::
+14090 REM ::::::::::::::::::::
+14100 DEF PROC_RANDOM_EVENT
+14110 LOCAL c%, f, free%, i%, r, rx%, ry%
+14120 REM IF FN_RND_PCT(10) THEN GOTO ENDPROC:REM No new obstacle
+14130 rx% = FN_RND_X:ry% = FN_RND_Y:REM Determine random position
+14140 free% = (FN_READ(rx%, ry%) = BLANK):IF NOT free% THEN 14220:REM Ensure the position is free
+14150 r = RND(1)
+14160 IF (r < .85) THEN 14190
+14170 i% = FN_NEXT_MONSTER_SLOT
+14180 IF (-1 < i%) THEN c% = ASC(MID$(MO$, i% + 1, 1)):PROC_MANAGE_MONSTER(rx%, ry%, c%, TRUE):f = 9.5:GOTO 14210:ELSE c% = E_DISC:GOTO 14200
+14190 c% = (r >= 0 AND r < .5)*-DOT + (r >= .5 AND r < .7)*-E_CIRC + (r >= .7 AND r < .85)*-FN_RND_EDIBLE
+14200 PROC_DRAW(rx%, ry%, c%, FALSE):f = 4.5
+14210 PROC_SOUND(f, 2)
+14220 ENDPROC
+14230 :
+14240 REM :::::::::::::::::
+14250 REM ::   REM Eat   ::
+14260 REM :::::::::::::::::
+14270 DEF FN_EAT(x%, y%)
+14280 LOCAL c%, n%, s%
+14290 c% = FN_READ(x%, y%):REM PROC_COUT(STR$(x%)+" "+STR$(y%)+" "+STR$(c%)+"      ",0)
+14300 n% = (c% = BLANK OR c% = BLANK_X)*0 + ((c% = SN_W AND NOT Rvs_Dir%) OR (c% >= MON_RED AND c% <= MON_GREEN) OR (c% = E_TOADSTOOL))*-1 + (c% = E_CIRC)*-2 + (c% = E_DISC)*-3
+14310 n% = n% + (c% = DOT OR (c% >= E_HEART AND c% <= E_FRUIT))*-4 + (c% = MON_WHITE OR c% = MON_BLUE)*-5
+14320 n% = n% + (c% = B_VERT OR c% = B_HORZ OR c% = B_UR OR c% = B_UL OR c% = B_DL OR c% = B_DR)*-6
+14330 ON n% GOTO 14340,14350,14360,14380,14410,14430:ELSE 14440
+14340 Dead% = TRUE:r% = FALSE:GOTO 14450:REM Collided with self, toadstool or deadly monster
+14350 PROC_SHRINK_SNAKE(1):GOTO 14390:REM The open circle shrinks the snake
+14360 PROC_UPDATE_MONSTER_STATE(TRUE, MON_BLUE):PROC_CHARGE:REM The filled circle makes existing monsters vulnerable
+14370 GOTO 14390
+14380 s% = 2 + (c% = DOT) + (c% = E_DISC)*2:PROC_INC_SIZE(s%):REM Edible increases size of snake
+14390 Score% = Score% + (c% = DOT)*-(Size% * 5) + (c% = E_HEART)*-100 + (c% = E_DIAMOND)*-200 + (c% = E_FRUIT)*-500 + (c% = E_CIRC OR c% = E_DISC)*-25
+14400 GOTO 14440
+14410 Score% = Score% + (c% = MON_BLUE)*-500 + (c% = MON_WHITE)*-1000:PROC_MANAGE_MONSTER(x%, y%, c%, FALSE):PROC_SHRINK_SNAKE(1):REM Eating cowardly monster shrinks the snake
+14420 GOTO 14440
+14430 Dead% = TRUE:REM Collided with boundary
+14440 IF (Dead% <> TRUE AND c% <> BLANK AND c% <> BLANK_X AND c% <> SN_W) THEN PROC_SOUND(16, 2)
+14450 := (Dead%) + (NOT Dead%) * -c%
+14460 :
+14470 REM :::::::::::::::::::::::::::
+14480 REM ::    Recoil The Snake   ::
+14490 REM :::::::::::::::::::::::::::
+14500 DEF FN_RECOIL_SNAKE
+14510 LOCAL i%
+14520 i% = P - Size%:REM Locate tail end of snake
+14530 IF i% < 0 THEN i% = i% + MAX_SIZE%:REM Wrap around to the end
+14540 PROC_ERASE(X(i%), Y(i%))
+14550 := i%
+14560 :
+14570 REM ::::::::::::::::::::::::::
+14580 REM ::   Shrink The Snake   ::
+14590 REM ::::::::::::::::::::::::::
+14600 DEF PROC_SHRINK_SNAKE(d%)
+14610 LOCAL n%
+14620 PROC_INC_SIZE(-d%)
+14630 n% = FN_RECOIL_SNAKE
+14640 ENDPROC
+14650 :
+14660 REM ::::::::::::::::::::::::::
+14670 REM ::  Grow Out The Snake  ::
+14680 REM ::::::::::::::::::::::::::
+14690 DEF PROC_GROW_SNAKE(d%)
+14700 LOCAL i%, ch%, dx%, dy%, nx%, ny%
+14710 dx% = FN_X_DELTA(d%):dy% = FN_Y_DELTA(d%)
+14720 nx% = X(P) + dx%:ny% = Y(P) + dy%
+14730 ch% = FN_EAT(nx%, ny%)
+14740 IF ch% < 0 THEN 14870
+14750 IF nx% <= UX% THEN nx% = LX% - 1:REM Snake entered Left Portal; Exit Out Right Portal
+14760 IF nx% >= LX% THEN nx% = UX% + 1:REM Snake entered Right Portal; Exit Out Left Portal
+14770 IF ny% <= UY% THEN ny% = LY% - 1:REM Snake entered Top Portal; Exit Out Bottom Portal
+14780 IF ny% >= LY% THEN ny% = UY% + 1:REM Snake entered Bottom Portal; Exit Out Top Portal
+14790 P = FN_NEXT_POS(P)
+14800 i% = FN_RECOIL_SNAKE
+14810 X(P) = nx%:Y(P) = ny%
+14820 i% = FN_NEXT_POS(i%):IF i% = P THEN 14840
+14830 REPEAT:PROC_DRAW(X(i%), Y(i%), SN_W, TRUE):i% = FN_NEXT_POS(i%):UNTIL i% = P
+14840 ch% = (AF <> 0) * -SN_W + (AF = 0) * -(d% + SN_L - 1):REM Which Animation Frame To Display For Snake's Head
+14850 PROC_DRAW(X(P), Y(P), ch%, TRUE)
+14860 AF = (AF + 1) MOD 2
+14870 ENDPROC
+14880 :
+14890 REM ::::::::::::::::::::::::::::::::
+14900 REM :: Increase The Size Of Snake ::
+14910 REM ::::::::::::::::::::::::::::::::
+14920 DEF PROC_INC_SIZE(n%)
+14930 Size% = FN_MAX(FN_MIN(Size% + n%, MAX_SIZE%), 2)
+14940 ENDPROC
+14950 :
+14960 REM :::::::::::::::::::::::::::::::::::::
+14970 REM :: Check For Reversal Of Direction ::
+14980 REM :::::::::::::::::::::::::::::::::::::
+14990 DEF FN_CHECK_FOR_REVERSE_DIRECTION(old%, new%)
+15000 REM 4 = UP; 3= DOWN; 1 = LEFT; 2 = RIGHT
+15010 REM := (old% = 4 AND new% = 3) OR (old% = 3 AND new% = 4) OR (old% = 1 AND new% = 2) OR (old% = 2 AND new% = 1)
+15020 := (old% OR new%) = 7 OR (old% OR new%) = 3
+15030 :
+15040 REM :::::::::::::::::::::::::::::::::
+15050 REM :: Monster Management Routines ::
+15060 REM :::::::::::::::::::::::::::::::::
+15070 DEF PROC_MANAGE_MONSTER(x%, y%, c%, state%)
+15080 LOCAL pos%:REM PROC_COUT(STR$(x%)+","+STR$(y%)+" "+STR$(c%)+"  ", 2)
+15090 IF state% = FALSE THEN PROC_CLEAR_MONSTER(x%, y%)
+15100 IF state% = TRUE THEN PROC_NEW_MONSTER(x%, y%, c%):PROC_DRAW(x%, y%, c%, TRUE)
+15110 IF state% = MON_BLUE OR state% = MON_WHITE THEN PROC_DRAW(x%, y%, state%, TRUE):IF state% = MON_BLUE THEN PROC_MON_GO_WHITE
+15120 IF state% = MON_RESET THEN PROC_DRAW(x%, y%, c%, TRUE)
+15130 ENDPROC
+15140 :
+15150 DEF PROC_MANAGE_MONSTER_BY_POS(pos%, c%, state%)
+15160 LOCAL x%, y%
+15170 IF -1 <> pos% THEN y% = pos% DIV CW%:x% = pos% MOD CW%:PROC_MANAGE_MONSTER(x%, y%, c%, state%)
+15180 ENDPROC
+15190 :
+15200 DEF PROC_NEW_MONSTER(x%, y%, c%)
+15210 LOCAL i%
+15220 IF M_Count% >= MAX_MONSTERS% THEN 15250
+15230 i% = FN_NEXT_MONSTER_SLOT
+15240 IF -1 <> i% THEN MP%(i%) = FN_HASH(x%, y%):M_Position% = i%:M_Count% = M_Count% + 1
+15250 ENDPROC
+15260 :
+15270 DEF FN_NEXT_MONSTER_SLOT
+15280 LOCAL found%, i%, r%
+15290 found% = FALSE:i% = 0
+15300 REPEAT
+15310   IF -1 = MP%(i%) THEN found% = TRUE:ELSE i% = i% + 1
+15320 UNTIL found% OR i% = MAX_MONSTERS%
+15330 IF found% THEN r% = i%:ELSE r% = -1
+15340 := r%
+15350 :
+15360 DEF FN_FIND_MONSTER(x%, y%)
+15370 LOCAL found%, i%, r%
+15380 found% = FALSE:i% = 0
+15390 REPEAT
+15400   IF (FN_HASH(x%, y%) = MP%(i%)) THEN found% = TRUE:ELSE i% = i% + 1
+15410 UNTIL found% OR i% = MAX_MONSTERS%
+15420 IF found% THEN r% = i%:ELSE r% = -1
+15430 := r%
+15440 :
+15450 DEF FN_MONSTER_AT_POS(pos%)
+15460 LOCAL r%, x%, y%
+15470 r% = -1:IF -1 <> pos% THEN y% = pos% DIV CW%:x% = pos% MOD CW%:r% = FN_READ(x%, y%)
+15480 := r%
+15490 :
+15500 DEF PROC_CLEAR_MONSTER(x%, y%)
+15510 LOCAL i%
+15520 i% = FN_FIND_MONSTER(x%, y%)
+15530 IF -1 <> i% THEN MP%(i%) = -1:M_Count% = M_Count% - 1
+15540 ENDPROC
+15550 :
+15560 DEF PROC_UPDATE_MONSTER_STATE(oldState%, newState%)
+15570 LOCAL c%, i%
+15580 FOR i% = 0 TO MAX_MONSTERS% - 1
+15590   c% = (newState% = MON_RESET) * -ASC(MID$(MO$, i%+1, 1)) + (newState% = MON_WHITE AND oldState% = MON_BLUE) * -FN_MONSTER_AT_POS(MP%(i%))
+15600   IF -1 <> MP%(i%) AND (oldState% = c% OR oldState% = TRUE) THEN PROC_MANAGE_MONSTER_BY_POS(MP%(i%), c%, newState%)
+15610 NEXT i%
+15620 ENDPROC
+15630 :
+15640 DEF PROC_MONSTER_COLOR_CHECK
+15650 IF MonGoWhite% <> FALSE AND FN_INT_TIME >= MonGoWhite% THEN MonGoWhite% = FALSE:PROC_UPDATE_MONSTER_STATE(MON_BLUE, MON_WHITE)
+15660 IF MonReset% <> FALSE AND FN_INT_TIME >= MonReset% THEN MonReset% = FALSE:PROC_UPDATE_MONSTER_STATE(TRUE, MON_RESET)
+15670 ENDPROC
+15680 :
+15690 REM :::::::::::::::::::::::::::::::::::::::::::
+15700 REM ::  Calculate type index of a clockwise  ::
+15710 REM ::  position on a box's perimeter        ::
+15720 REM :::::::::::::::::::::::::::::::::::::::::::
+15730 DEF FN_CLOCKWISE_BOX_SIDE_INDEX(pos%, width%, height%)
+15740 REM 0 = UPPER_LEFT_CORNER, 1 = UPPER_MIDDLE, 2 = UPPER_RIGHT_CORNER, 3 = MIDDLE_RIGHT, 4 = LOWER_RIGHT_CORNER, 5 = LOWER_MIDDLE, 6 = LOWER_LEFT_CORNER, 7 = MIDDLE_LEFT
+15750 LOCAL r%
+15760 r% = (pos% > 0 AND pos% < width% - 1) * -1 + (pos% = width% - 1) * -2 + (pos% >= width% AND pos% < width% + height% - 2) * -3 + (pos% = width% + height% - 2) * -4
+15770 r% = r% + (pos% > width% + height% - 2 AND pos% < 2 * width% + height% - 3) * -5 + (pos% = 2 * width% + height% - 3) * -6 + (pos% > 2 * width% + height% - 3) * -7
+15780 :=r%
+15790 :
+15800 REM ::::::::::::::::::::::::::
+15810 REM ::  Draw Box Clockwise  ::
+15820 REM ::::::::::::::::::::::::::
+15830 DEF PROC_CLOCKWISE_BOX(ux%, uy%, width%, height%, color%)
+15840 LOCAL aq%, bq%, ch%, i%, p%, x%, y%
+15850 aq% = width% + height% - 2:bq% = aq% + width%:p% = bq% + height% - 2
+15860 FOR i% = 0 TO p% - 1
+15870   x% = (i% < width%) * -i% + (i% > (width%-1) AND i% < aq%) * -(width%-1) + (i% >= aq% AND i% < bq%) * (i% - (bq% - 1)) + (i% >= bq%) * 0
+15880   y% = (i% < width%) * 0 + (i% > (width%-1) AND i% < aq%) * -(i% - (width%-1)) + (i% >= aq% AND i% < bq%) * -(height%-1) + (i% >= bq%) * -((height%-2) - (i% - bq%))
+15890   ch% = ASC(MID$(BX$, FN_CLOCKWISE_BOX_SIDE_INDEX(i%, width%, height%) + 1, 1))
+15900   PROC_PLOT(ux% + x%, uy% + y%, ch%, color%)
+15910 NEXT i%
+15920 ENDPROC
+15930 :
+15940 REM :::::::::::::::::::::::::
+15950 REM ::  Draw Playing Field ::
+15960 REM :::::::::::::::::::::::::
+15970 DEF PROC_DRAW_PLAYING_FIELD(ux%, uy%, width%, height%)
+15980 PROC_CLOCKWISE_BOX(ux%, uy%, width%, height%, BLUE)
+15990 ENDPROC
+16000 :
+16010 REM :::::::::::::::::::
+16020 REM :: Draw Portals  ::
+16030 REM :::::::::::::::::::
+16040 DEF PROC_DRAW_PORTALS(horizontal%, vertical%, ux%, uy%, width%, height%)
+16050 LOCAL ch%, h%, i%, j%, lx%, ly%, pColor%, v%, wColor%
+16060 pColor% = CYAN:wColor% = BLUE:h% = ux% + width% DIV 2 - 2:v% = uy% + height% DIV 2 - 2:lx% = ux% + width% - 1:ly% = uy% + height% - 1
+16070 FOR i% = 0 TO 1:REM Vertical portal
+16080   FOR j% = 0 TO 2
+16090     ch% = (vertical%) * -(ASC(MID$(PV$(i%), j% + 1, 1))) + (NOT vertical%) * -B_HORZ
+16100     PROC_PLOT(h% + j%, (i% = 0) * -uy% + (i% = 1) * -ly%, ch%, (ch% = BLANK_X) * -BLACK + (ch% = B_HORZ) * -wColor% + ((ch% <> BLANK_X) AND (ch% <> B_HORZ)) * -pColor%)
+16110   NEXT j%
+16120 NEXT i%
+16130 FOR i% = 0 TO 1:REM Horizontal portal
+16140   FOR j% = 0 TO 2
+16150     ch% = (horizontal%) * -(ASC(MID$(PH$(i%), j% + 1, 1))) + (NOT horizontal%) * -B_VERT
+16160     PROC_PLOT((i% = 0) * -ux% + (i% = 1) * -lx%, v% + j%, ch%, (ch% = BLANK_X) * -BLACK + (ch% = B_VERT) * -wColor% + ((ch% <> BLANK_X) AND (ch% <> B_VERT)) * -pColor%)
+16170   NEXT j%
+16180 NEXT i%
+16190 ENDPROC
+16200 :
+16210 REM :::::::::::::::::::::::::::
+16220 REM ::  Update Portal State  ::
+16230 REM :::::::::::::::::::::::::::
+16240 DEF PROC_UPDATE_PORTAL_STATE
+16250 LOCAL horizontal%, vertical%
+16260 Portal_State% = (Portal_State% + 1) MOD 4
+16270 IF Portal_State% = 0 THEN horizontal% = FALSE: vertical% = FALSE
+16280 IF Portal_State% = 1 THEN horizontal% = TRUE: vertical% = FALSE
+16290 IF Portal_State% = 2 THEN horizontal% = TRUE: vertical% = TRUE
+16300 IF Portal_State% = 3 THEN horizontal% = FALSE: vertical% = TRUE
+16310 PROC_DRAW_PORTALS(horizontal%, vertical%, UX%, UY%, CW% - 2*UX%, CH% - UY%)
+16320 FOR i% = 1 TO 2:PROC_SOUND(i% * 24, 1.5 * i%):NEXT i%
+16330 ENDPROC
+16340 :
+16350 REM ::::::::::::::::::::::::::::::::
+16360 REM ::       Clockwise Plot       ::
+16370 REM ::::::::::::::::::::::::::::::::
+16380 DEF PROC_CLOCKWISE_PLOT(pos%, color%, char%, ux%, uy%, width%, height%)
+16390 LOCAL cx%, cy%, a%, b%, c%
+16400 a% = width% + height% - 2:b% = a% + width%:c% = b% + height% - 2
+16410 cx% = (pos% < width%) * -pos% + (pos% > (width% - 1) AND pos% < a%) * -(width% - 1)
+16420 cx% = cx% + (pos% >= a% AND pos% < b%) * (pos% - (b% - 1)) + (pos% >= b%) * 0
+16430 cy% = (pos% < width%) * 0 + (pos% > (width% - 1) AND pos% < a%) * -(pos% - (width% - 1))
+16440 cy% = cy% + (pos% >= a% AND pos% < b%) * -(height% - 1) + (pos% >= b%) * -((height% - 2) - (pos% - b%))
+16450 VDU 31,ux% + cx%,uy% + cy%,17,color%,char%:REM Plot a character on the path
+16460 ENDPROC
+16470 :
+16480 REM :::::::::::::::::::::::
+16490 REM ::  Death Animation  ::
+16500 REM :::::::::::::::::::::::
+16510 DEF PROC_DEATH_ANIMATION(x%, y%)
+16520 LOCAL ch%, fr$, i%, n%
+16530 REPEAT:Size% = Size% - 1:n% = FN_RECOIL_SNAKE:PROC_SOUND(2 * Size%, 2):PROC_SOUND(0, 0):PROC_SLEEP(10):UNTIL Size% < 2
+16540 fr$ = RIGHT$("0"+STR$(SN_W), 3)+STR$(SN_U)+STR$(SN_D1)+STR$(SN_D2)+STR$(SN_D3)+STR$(SN_D4)+STR$(SN_D5)+STR$(SN_D6)+"0"+STR$(BLANK)
+16550 FOR i% = 1 TO LEN(fr$) DIV 3 STEP 2
+16560   ch% = VAL(MID$(fr$, 3 * (i% - 1) + 1, 3))
+16570   VDU 31, x%, y%, 17, YELLOW, ch%:PROC_SOUND(i% + 8, 2):PROC_SLEEP(20)
+16580 NEXT i%:PROC_SOUND(4, 3)
+16590 ENDPROC
+16600 :
+16610 REM :::::::::::::::::::
+16620 REM ::    Welcome    ::
+16630 REM :::::::::::::::::::
+16640 DEF PROC_WELCOME
+16650 LOCAL boxh%, boxw%, c%, cc%, ch$, ex%, perimeter%, t%, t$, ux%, uy%
+16660 boxh% = 18:boxw% = 38:cc% = 0:ex% = FALSE:perimeter% = 2 * (boxw% + boxh% - 2):t% = 2:ux% = (CW% - boxw%) DIV 2:uy% = 0
+16670 PROC_HIDE_CURSOR
+16680 CLS:PROC_DEFAULT_COLORS
+16690 PRINT TAB(0, uy% + 1);
+16700 PROC_CENTER(" Welcome to " + CHR$(17)+CHR$(YELLOW) + GameName$ + CHR$(17)+CHR$(WHITE)+ "..."):PRINT:PRINT
+16710 PROC_CENTER(" A nostalgic variant of the classic"):PRINT
+16720 PROC_CENTER(" SNAKE game."):PRINT:PRINT
+16730 PROC_CENTER(" Use the four arrow keys to maneuver"):PRINT
+16740 PROC_CENTER(" the starving little snake to snack"):PRINT
+16750 PROC_CENTER(" on pellets and other tasty morsels."):PRINT
+16760 PROC_CENTER(" Avoid the walls and spooky little"):PRINT
+16770 PROC_CENTER(" monsters while trying to avoid"):PRINT
+16780 PROC_CENTER(" chomping on yourself like an"):PRINT
+16790 COLOUR YELLOW:PROC_CENTER(" Ouroboros."):PRINT:PRINT
+16800 COLOUR WHITE:PROC_CENTER(" Good luck and have fun!"):PRINT:PRINT
+16810 COLOUR CYAN:PROC_CENTER("Hit a key to continue")
+16820 REPEAT
+16830   PROC_CLOCKWISE_PLOT(cc%, BLACK, BLANK, ux%, uy%, boxw%, boxh%)
+16840   cc% = (cc% + 1) MOD perimeter%
+16850   PROC_CLOCKWISE_PLOT(cc%, cc% MOD 6 + 1, MON_RED, ux%, uy%, boxw%, boxh%)
+16860   IF SY$ = "A" THEN c% = INKEY(DL%):PROC_EMPTY_KEYBOARD_BUFFER:ELSE c% = INKEY(TK/DL%)
+16870   IF c% > 0 THEN ex% = TRUE
+16880 UNTIL ex%
+16890 boxh% = 18:boxw% = 38:cc% = 0:ex% = FALSE:perimeter% = 2 * (boxw% + boxh% - 2):ux% = (CW% - boxw%) DIV 2:uy% = 0
+16900 CLS:PROC_DEFAULT_COLORS
+16910 PRINT TAB(0, uy% + 2);
+16920 COLOUR YELLOW:PROC_CENTER(STRING$(t%, " ")+"....  Score"+STRING$(2, " ")+"Resize"):PRINT:PRINT
+16930 t$ = STRING$(t%, " ")+CHR$(17)+CHR$(RED)+CHR$(MON_RED)+CHR$(17)+CHR$(MAGENTA)+CHR$(MON_RED)+CHR$(17)+CHR$(CYAN)+CHR$(MON_RED)+CHR$(17)+CHR$(GREEN)+CHR$(MON_RED)
+16940 t$ = t$ + STRING$(2, " ")+CHR$(17)+CHR$(WHITE)+"Death"+STRING$(2, " ")+CHR$(SKULL)+STRING$(6, " "):PROC_CENTER(t$):PRINT
+16950 PROC_CENTER(STRING$(t%, " ")+CHR$(17)+CHR$(BLUE)+CHR$(MON_RED)+STRING$(5, " ")+CHR$(17)+CHR$(WHITE)+"  500"+STRING$(2, " ")+"-"+CHR$(17)+CHR$(YELLOW)+CHR$(SN_W)+STRING$(4, " ")):PRINT
+16960 PROC_CENTER(STRING$(t%, " ")+CHR$(17)+CHR$(WHITE)+CHR$(MON_RED)+STRING$(5, " ")+" 1000"+STRING$(2, " ")+"-"+CHR$(17)+CHR$(YELLOW)+CHR$(SN_W)+STRING$(4, " ")):PRINT
+16970 PROC_CENTER(STRING$(t%, " ")+CHR$(17)+CHR$(WHITE)+CHR$(DOT)+STRING$(5, " ")+"  5x"+CHR$(17)+CHR$(YELLOW)+CHR$(SN_W)+STRING$(2, " ")+CHR$(17)+CHR$(WHITE)+"+"+CHR$(17)+CHR$(YELLOW)+CHR$(SN_W)+STRING$(4, " ")):PRINT
+16980 PROC_CENTER(STRING$(t%, " ")+CHR$(17)+CHR$(WHITE)+CHR$(E_CIRC)+STRING$(5, " ")+"   25"+STRING$(2, " ")+"-"+CHR$(17)+CHR$(YELLOW)+CHR$(SN_W)+STRING$(4, " ")):PRINT
+16990 PROC_CENTER(STRING$(t%, " ")+CHR$(17)+CHR$(WHITE)+CHR$(E_DISC)+STRING$(5, " ")+"   25"+STRING$(2, " ")+STRING$(6, " ")):PRINT
+17000 PROC_CENTER(STRING$(t%, " ")+CHR$(17)+CHR$(RED)+CHR$(E_HEART)+STRING$(5, " ")+CHR$(17)+CHR$(WHITE)+"  100"+STRING$(2, " ")+"+"+CHR$(17)+CHR$(YELLOW)+CHR$(SN_W)+CHR$(SN_W)+STRING$(3, " ")):PRINT
+17010 PROC_CENTER(STRING$(t%, " ")+CHR$(17)+CHR$(CYAN)+CHR$(E_DIAMOND)+STRING$(5, " ")+CHR$(17)+CHR$(WHITE)+"  200"+STRING$(2, " ")+"+"+CHR$(17)+CHR$(YELLOW)+CHR$(SN_W)+CHR$(SN_W)+STRING$(3, " ")):PRINT
+17020 PROC_CENTER(STRING$(t%, " ")+CHR$(17)+CHR$(GREEN)+CHR$(E_FRUIT)+STRING$(5, " ")+CHR$(17)+CHR$(WHITE)+"  500"+STRING$(2, " ")+"+"+CHR$(17)+CHR$(YELLOW)+CHR$(SN_W)+CHR$(SN_W)+STRING$(3, " ")):PRINT
+17030 PROC_CENTER(STRING$(t%, " ")+CHR$(17)+CHR$(YELLOW)+CHR$(E_TOADSTOOL)+STRING$(5, " ")+CHR$(17)+CHR$(WHITE)+"Death"+STRING$(2, " ")+CHR$(SKULL)+STRING$(6, " ")):PRINT:PRINT
+17040 COLOUR GREEN:PROC_CENTER("Hit a key to begin playing")
+17050 PROC_CLOCKWISE_BOX(ux% + 1, uy% + 1, boxw% - 2, boxh% - 2, CYAN)
+17060 ch$=CHR$(SN_R)+CHR$(SN_R)+CHR$(SN_D)+CHR$(SN_D)+CHR$(SN_L)+CHR$(SN_L)+CHR$(SN_U)+CHR$(SN_U)
+17070 REPEAT
+17080   PROC_CLOCKWISE_PLOT(cc% - 1, BLACK, BLANK, ux%, uy%, boxw%, boxh%):PROC_CLOCKWISE_PLOT(cc%, BLACK, BLANK, ux%, uy%, boxw%, boxh%)
+17090   cc% = (cc% + 1) MOD perimeter%
+17100   c% = (cc% MOD 2 <> 0) * -SN_W + (cc% MOD 2 = 0) * -ASC(MID$(ch$, FN_CLOCKWISE_BOX_SIDE_INDEX(cc%, boxw%, boxh%) + 1, 1))
+17110   PROC_CLOCKWISE_PLOT(cc% - 1, YELLOW, SN_W, ux%, uy%, boxw%, boxh%):PROC_CLOCKWISE_PLOT(cc%, YELLOW, c%, ux%, uy%, boxw%, boxh%)
+17120   IF SY$ = "A" THEN c% = INKEY(DL%):PROC_EMPTY_KEYBOARD_BUFFER:ELSE c% = INKEY(TK/DL%)
+17130   IF c% > 0 THEN ex% = TRUE
+17140 UNTIL ex%
+17150 PROC_DEFAULT_COLORS
+17160 ENDPROC
+17170 :
+17180 REM :::::::::::::::::
+17190 REM ::  Game Over  ::
+17200 REM :::::::::::::::::
+17210 DEF PROC_GAME_OVER
+17220 VDU 17,RED:PROC_FULL_CENTER_TEXT("GAME OVER")
+17230 PROC_SLEEP(200):VDU 17,YELLOW
+17240 PROC_HISCORE_WRITE(GameName$)
+17250 ENDPROC
+17260 :
+17270 REM :::::::::::::::::::::::
+17280 REM :: Play Simple Sound ::
+17290 REM :::::::::::::::::::::::
+17300 DEF PROC_SOUND(index%, duration%)
+17310 LOCAL constant%:constant% = 12.2
+17320 SOUND 1, -10, index% * constant%, duration%
+17330 ENDPROC
+17340 :
+17350 REM :::::::::::::::::::::::::
+17360 REM :: Play Musical Phrase ::
+17370 REM :::::::::::::::::::::::::
+17380 DEF PROC_PLAY(notes$)
+17390 LOCAL d%, j%, l%, p%
+17400 l% = LEN(notes$) DIV 3
+17410 FOR j% = 1 TO l% STEP 2
+17420   p% = VAL(MID$(notes$, 3 * (j% - 1) + 1, 3)):d% = VAL(MID$(notes$, 3 * (j% - 1) + 4, 3))
+17430   SOUND 1, -10, p%, d%
+17440   SOUND 1, 0, p%, 1:REM Stacatto the currently playing sound
+17450 NEXT j%
+17460 ENDPROC
+17470 :
+17480 REM :::::::::::::::::::
+17490 REM ::  CHARGE!!!!!  ::
+17500 REM :::::::::::::::::::
+17510 DEF PROC_CHARGE
+17520 PROC_PLAY("129001149001165001177004165002177008"):REM COUNT,PITCH,DURATION
+17530 ENDPROC
+17540 :
+17550 REM ::::::::::::::::::::::::::
+17560 REM :: Define Custom Colors ::
+17570 REM ::::::::::::::::::::::::::
+17580 DEF PROC_REDEFINE_COLORS
+17590 IF SY$="A" AND FN_COLORCOUNT < &40 THEN VDU 19,C_ORANGE,&FF,&FF,&80,&00:ELSE COLOUR C_ORANGE,&FF,&80,&00
+17600 ENDPROC
+17610 :
+17620 REM ::::::::::::::::::::::::::::::
+17630 REM :: Define Custom Characters ::
+17640 REM ::::::::::::::::::::::::::::::
+17650 DEF PROC_REDEFINE_CHARS
+17660 VDU 23,BLANK_X,0,0,0,0,0,0,0,0:REM BLANK
+17670 VDU 23,DOT,0,0,0,24,24,0,0,0:REM DOT
+17680 VDU 23,SN_L,0,60,30,14,14,30,60,0:REM LEFT(3)
+17690 VDU 23,SN_R,0,60,120,112,112,120,60,0:REM RIGHT(3)
+17700 VDU 23,SN_D,0,60,126,126,102,66,0,0:REM DOWN(3)
+17710 VDU 23,SN_U,0,0,66,102,126,126,60,0:REM UP(3)
+17720 VDU 23,SN_W,0,60,126,126,126,126,60,0:REM WHOLE(3)
+17730 VDU 23,E_HEART,54,127,127,127,62,28,8,0:REM HEART(1)
+17740 VDU 23,E_DIAMOND,8,28,62,127,62,28,8,0:REM DIAMOND(6)
+17750 VDU 23,E_FRUIT,0,12,24,60,60,60,24,0:REM FRUIT(2)
+17760 VDU 23,E_TOADSTOOL,0,0,24,60,60,8,24,0:REM TOADSTOOL(3)
+17770 VDU 23,E_CIRC,0,60,126,102,102,126,60,0:REM CIRCLE(7)
+17780 VDU 23,E_DISC,0,60,126,126,126,126,60,0:REM FILLED CIRCLE(7)
+17790 VDU 23,MON_WHITE,0,60,126,90,126,126,90,0:REM WHITE(7)
+17800 VDU 23,MON_BLUE,0,60,126,90,126,126,90,0:REM BLUE(4)
+17810 VDU 23,MON_RED,0,60,126,90,126,126,90,0:REM RED(1)
+17820 VDU 23,MON_PINK,0,60,126,90,126,126,90,0:REM MAGENTA(5)
+17830 VDU 23,MON_CYAN,0,60,126,90,126,126,90,0:REM CYAN(6)
+17840 VDU 23,MON_GREEN,0,60,126,90,126,126,90,0:REM GREEN(2)
+17850 VDU 23,B_VERT,24,24,24,24,24,24,24,24:REM VERTICAL(4)
+17860 VDU 23,B_HORZ,0,0,0,255,255,0,0,0:REM HORIZONTAL(4)
+17870 VDU 23,B_UR,0,0,0,7,15,28,24,24:REM UPRIGHT C(4)
+17880 VDU 23,B_UL,0,0,0,224,240,56,24,24:REM UPLEFT C(4)
+17890 VDU 23,B_DL,24,24,56,240,224,0,0,0:REM DOWNLEFT C(4)
+17900 VDU 23,B_DR,24,24,28,15,7,0,0,0:REM DOWN RIGHT C(4)
+17910 VDU 23,SN_D1,0,0,0,102,126,126,60,0:REM DYING 1
+17920 VDU 23,SN_D2,0,0,0,0,126,126,60,0:REM DYING 2
+17930 VDU 23,SN_D3,0,0,0,0,126,126,60,0:REM DYING 3
+17940 VDU 23,SN_D4,0,0,0,0,24,60,60,0:REM DYING 4
+17950 VDU 23,SN_D5,0,0,0,0,24,24,60,0:REM DYING 5
+17960 VDU 23,SN_D6,0,0,0,0,8,24,16,0:REM DYING 6
+17970 VDU 23,SKULL,0,189,126,90,126,165,24,0:REM SKULL(7)
+17980 ENDPROC
+17990 :
+18000 REM ::::::::::::::::::::::::::::::
+18010 REM ::  Error Handling Routine  ::
+18020 REM ::::::::::::::::::::::::::::::
+18030 DEF PROC_HANDLE_ERROR
+18040 IF ERR <> 17 THEN PROC_DEFAULT_COLORS:PROC_SHOW_CURSOR:REPORT:PRINT" @line #";ERL:STOP
+18050 ENDPROC
