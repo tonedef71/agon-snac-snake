@@ -592,9 +592,9 @@
 15910 NEXT i%
 15920 ENDPROC
 15930 :
-15940 REM :::::::::::::::::::::::::
-15950 REM ::  Draw Playing Field ::
-15960 REM :::::::::::::::::::::::::
+15940 REM ::::::::::::::::::::::::
+15950 REM :: Draw Playing Field ::
+15960 REM ::::::::::::::::::::::::
 15970 DEF PROC_DRAW_PLAYING_FIELD(ux%, uy%, width%, height%)
 15980 PROC_CLOCKWISE_BOX(ux%, uy%, width%, height%, BLUE)
 15990 ENDPROC
@@ -802,5 +802,5 @@
 18010 REM ::  Error Handling Routine  ::
 18020 REM ::::::::::::::::::::::::::::::
 18030 DEF PROC_HANDLE_ERROR
-18040 IF ERR <> 17 THEN PROC_DEFAULT_COLORS:PROC_SHOW_CURSOR:REPORT:PRINT" @line #";ERL:STOP
+18040 IF ERR <> 17 THEN PROC_DEFAULT_COLORS:PROC_SHOW_CURSOR:PRINT:REPORT:PRINT" @line #";ERL:STOP
 18050 ENDPROC
