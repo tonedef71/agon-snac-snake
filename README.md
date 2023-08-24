@@ -1,4 +1,5 @@
-# agon-snac-snake
+# agon-snac-snake ![snac-snake_icon](https://github.com/tonedef71/agon-snac-snake/assets/3978924/b3799768-9e80-44d1-925f-246474965573)
+
 Snac-Snake: a variant of the classic game [*Snake*](https://en.wikipedia.org/wiki/Snake_(video_game_genre)) written in [BBC BASIC v3](https://en.wikipedia.org/wiki/BBC_BASIC)
 
 * Originally created for the [3rd Olimex AgonLight Week Programming Challenge 2023](https://olimex.wordpress.com/2023/06/02/agonlight-week-programming-challenge-issue-3/)
